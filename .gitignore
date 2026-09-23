@@ -19,7 +19,6 @@ dataset/
 # Training outputs
 history/
 runs/
-best/
 weights/
 
 # Models / TensorRT
