@@ -1,0 +1,145 @@
+// 部署流程：人看過 MLflow 上的指標、決定要部署之後，指定模型版本啟動。
+// 回滾也是用這條流程：MODEL_VERSION 填先前的版本再跑一次。
+pipeline {
+    agent { label 'docker' }   // 需要 docker 與 kubectl 的一般 agent，不需要 GPU
+
+    parameters {
+        string(name: 'MODEL_NAME', defaultValue: 'yolo-detector', description: 'MLflow 上註冊的模型名稱')
+        string(name: 'MODEL_VERSION', defaultValue: '', description: '要部署的模型版本編號（必填）')
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        disableConcurrentBuilds()   // 同一時間只允許一次部署
+    }
+
+    environment {
+        // 以下都是佔位值，換成實際環境的設定。
+        MLFLOW_TRACKING_URI = 'http://mlflow.example.com:5000'
+        REGISTRY            = 'registry.example.com'
+        IMAGE               = "${REGISTRY}/ml/detection-service"
+        K8S_NAMESPACE       = 'production'
+        DEPLOYMENT          = 'detection-service'
+        PIP_CACHE_DIR       = "${WORKSPACE}/.pip-cache"
+    }
+
+    stages {
+        stage('檢查參數') {
+            steps {
+                script {
+                    if (!(params.MODEL_VERSION ==~ /\d+/)) {
+                        error 'MODEL_VERSION 必須是模型版本編號，例如 3'
+                    }
+                    if (!(params.MODEL_NAME ==~ /[A-Za-z0-9._-]+/)) {
+                        error 'MODEL_NAME 只能包含英數字、點、底線與連字號'
+                    }
+                    // tag 同時帶模型版本與程式碼版本：同一個模型配上新的服務程式也會是不同的 image。
+                    env.IMAGE_TAG = "v${params.MODEL_VERSION}-${env.GIT_COMMIT.take(7)}"
+                    env.IMAGE_REF = "${env.IMAGE}:${env.IMAGE_TAG}"
+                    currentBuild.description = "${params.MODEL_NAME} v${params.MODEL_VERSION}"
+                }
+            }
+        }
+
+        stage('從 MLflow 下載模型') {
+            agent {
+                docker { image 'python:3.12-slim'; reuseNode true }
+            }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'mlflow-credentials',
+                    usernameVariable: 'MLFLOW_TRACKING_USERNAME',
+                    passwordVariable: 'MLFLOW_TRACKING_PASSWORD'
+                )]) {
+                    // 這一步會在 console 印出「要部署的版本」與「現任正式版」的指標對照。
+                    sh '''
+                        python -m venv .venv
+                        . .venv/bin/activate
+                        pip install -r scripts/requirements.txt
+                        python scripts/download_model.py --name "$MODEL_NAME" --version "$MODEL_VERSION" --out model
+                    '''
+                }
+            }
+        }
+
+        stage('建置 image') {
+            steps {
+                sh 'docker build -f service/Dockerfile --build-arg MODEL_VERSION="$MODEL_VERSION" -t "$IMAGE_REF" .'
+            }
+        }
+
+        stage('冒煙測試') {
+            steps {
+                // 推送之前先把 image 跑起來打一次，壞掉的 image 不會離開這台機器。
+                sh '''
+                    docker run -d --name "smoke-$BUILD_NUMBER" "$IMAGE_REF"
+                    docker exec "smoke-$BUILD_NUMBER" python -m service.smoke_test
+                '''
+            }
+            post {
+                failure {
+                    sh 'docker logs "smoke-$BUILD_NUMBER" || true'
+                }
+                always {
+                    sh 'docker rm -f "smoke-$BUILD_NUMBER" || true'
+                }
+            }
+        }
+
+        stage('推送 image') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'registry-credentials',
+                    usernameVariable: 'REGISTRY_USER',
+                    passwordVariable: 'REGISTRY_PASSWORD'
+                )]) {
+                    sh '''
+                        echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY" -u "$REGISTRY_USER" --password-stdin
+                        docker push "$IMAGE_REF"
+                        docker logout "$REGISTRY"
+                    '''
+                }
+            }
+        }
+
+        stage('更新正式環境') {
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig-production', variable: 'KUBECONFIG')]) {
+                    script {
+                        try {
+                            sh '''
+                                kubectl -n "$K8S_NAMESPACE" set image "deployment/$DEPLOYMENT" "$DEPLOYMENT=$IMAGE_REF"
+                                kubectl -n "$K8S_NAMESPACE" annotate "deployment/$DEPLOYMENT" --overwrite \
+                                    kubernetes.io/change-cause="$MODEL_NAME v$MODEL_VERSION (Jenkins #$BUILD_NUMBER)"
+                                kubectl -n "$K8S_NAMESPACE" rollout status "deployment/$DEPLOYMENT" --timeout=300s
+                            '''
+                        } catch (err) {
+                            // 新版起不來就退回上一版，正式環境繼續用原本的模型服務。
+                            sh 'kubectl -n "$K8S_NAMESPACE" rollout undo "deployment/$DEPLOYMENT" || true'
+                            throw err
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('標記為正式版') {
+            // 放在 rollout 成功之後：champion 永遠代表真的在正式環境跑的模型版本。
+            agent {
+                docker { image 'python:3.12-slim'; reuseNode true }
+            }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'mlflow-credentials',
+                    usernameVariable: 'MLFLOW_TRACKING_USERNAME',
+                    passwordVariable: 'MLFLOW_TRACKING_PASSWORD'
+                )]) {
+                    sh '''
+                        . .venv/bin/activate
+                        python scripts/promote.py --name "$MODEL_NAME" --version "$MODEL_VERSION" --image "$IMAGE_REF"
+                    '''
+                }
+            }
+        }
+    }
+}

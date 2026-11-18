@@ -1,0 +1,45 @@
+// CI：push 或 PR 時自動執行，只檢查程式碼，不訓練模型。
+// Jenkins 設定：Multibranch Pipeline，Script Path 填 Jenkinsfile.ci，由 GitHub webhook 觸發。
+pipeline {
+    agent {
+        docker { image 'python:3.12-slim' }
+    }
+
+    options {
+        timeout(time: 10, unit: 'MINUTES')
+    }
+
+    environment {
+        // container 以非 root 身分執行，套件裝進工作目錄裡的虛擬環境。
+        PIP_CACHE_DIR = "${WORKSPACE}/.pip-cache"
+    }
+
+    stages {
+        stage('安裝') {
+            steps {
+                sh '''
+                    python -m venv .venv
+                    . .venv/bin/activate
+                    pip install -r requirements-dev.txt
+                '''
+            }
+        }
+
+        stage('風格檢查') {
+            steps {
+                sh '. .venv/bin/activate && ruff check .'
+            }
+        }
+
+        stage('測試') {
+            steps {
+                sh '. .venv/bin/activate && pytest --junitxml=test-results.xml'
+            }
+            post {
+                always {
+                    junit 'test-results.xml'
+                }
+            }
+        }
+    }
+}

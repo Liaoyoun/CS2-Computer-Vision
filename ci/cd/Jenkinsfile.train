@@ -1,0 +1,70 @@
+// 訓練流程：由人在 Jenkins 按「Build with Parameters」啟動。
+// 在 GPU 執行機上用 container 訓練，結果上傳 MLflow 並註冊成一個模型版本。
+// 這條流程到註冊為止，不會部署；要不要部署由人看過指標後另外啟動 Jenkinsfile.deploy。
+pipeline {
+    agent {
+        dockerfile {
+            filename 'train/Dockerfile'
+            label 'gpu'                          // 只會排到標記為 gpu 的 agent
+            args '--gpus all --shm-size=8g'      // 把顯示卡交給 container；資料載入需要較大的共享記憶體
+        }
+    }
+
+    parameters {
+        string(name: 'DATA', defaultValue: 'coco8.yaml', description: '資料集設定檔')
+        string(name: 'BASE_MODEL', defaultValue: 'yolo11n.pt', description: '基礎模型')
+        string(name: 'EPOCHS', defaultValue: '3', description: '訓練回合數')
+        string(name: 'IMGSZ', defaultValue: '640', description: '影像大小')
+        string(name: 'BATCH', defaultValue: '16', description: '批次大小')
+        string(name: 'MODEL_NAME', defaultValue: 'yolo-detector', description: 'MLflow 上註冊的模型名稱')
+    }
+
+    options {
+        timeout(time: 6, unit: 'HOURS')
+        disableConcurrentBuilds()                // 同一張顯示卡一次只跑一個訓練
+    }
+
+    environment {
+        MLFLOW_TRACKING_URI = 'http://mlflow.example.com:5000'   // 佔位值，換成實際位址
+    }
+
+    stages {
+        stage('確認 GPU') {
+            steps {
+                sh 'nvidia-smi'
+            }
+        }
+
+        stage('訓練並上傳 MLflow') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'mlflow-credentials',
+                    usernameVariable: 'MLFLOW_TRACKING_USERNAME',
+                    passwordVariable: 'MLFLOW_TRACKING_PASSWORD'
+                )]) {
+                    // 建置參數會自動變成環境變數，用單引號讓 shell 自己展開，不經過 Groovy 字串拼接。
+                    sh '''
+                        python train/train.py \
+                            --data "$DATA" \
+                            --base-model "$BASE_MODEL" \
+                            --epochs "$EPOCHS" \
+                            --imgsz "$IMGSZ" \
+                            --batch "$BATCH" \
+                            --device 0 \
+                            --model-name "$MODEL_NAME"
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            archiveArtifacts artifacts: 'train_result.json'
+            script {
+                def result = readJSON file: 'train_result.json'   // 需要 Pipeline Utility Steps 外掛
+                currentBuild.description = "${result.model_name} v${result.model_version}，mAP50 ${result.metrics.mAP50}"
+            }
+        }
+    }
+}

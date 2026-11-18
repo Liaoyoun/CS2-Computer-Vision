@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pip-cache/
+.pytest_cache/
+.ruff_cache/
+
+# 訓練產物：全部以 MLflow 為準，不進版控
+runs/
+datasets/
+model/
+*.pt
+*.onnx
+train_result.json
+test-results.xml

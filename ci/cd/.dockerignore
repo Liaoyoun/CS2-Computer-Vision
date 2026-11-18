@@ -1,0 +1,7 @@
+.git
+.venv
+.pip-cache
+runs
+datasets
+tests
+**/__pycache__

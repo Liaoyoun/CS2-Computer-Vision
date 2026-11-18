@@ -1,0 +1,179 @@
+<mxfile host="65bd71144e">
+    <diagram id="yolo-mlops" name="YOLO MLOps 流程">
+        <mxGraphModel dx="1316" dy="848" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="800" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="ci" parent="1" style="swimlane;startSize=30;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" value="CI（push / PR 自動觸發）" vertex="1">
+                    <mxGeometry height="340" width="220" x="40" y="40" as="geometry">
+                        <mxRectangle height="30" width="180" x="40" y="40" as="alternateBounds"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="ci1" parent="ci" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="開發者 push 或開 PR" vertex="1">
+                    <mxGeometry height="40" width="180" x="20" y="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="ci2" parent="ci" style="rounded=1;whiteSpace=wrap;html=1;" value="GitHub webhook 通知 Jenkins" vertex="1">
+                    <mxGeometry height="40" width="180" x="20" y="105" as="geometry"/>
+                </mxCell>
+                <mxCell id="ci3" parent="ci" style="rounded=1;whiteSpace=wrap;html=1;" value="ruff 風格檢查" vertex="1">
+                    <mxGeometry height="40" width="180" x="20" y="165" as="geometry"/>
+                </mxCell>
+                <mxCell id="ci4" parent="ci" style="rounded=1;whiteSpace=wrap;html=1;" value="pytest（假模型，不訓練）" vertex="1">
+                    <mxGeometry height="40" width="180" x="20" y="225" as="geometry"/>
+                </mxCell>
+                <mxCell id="ci5" parent="ci" style="rounded=1;whiteSpace=wrap;html=1;" value="回報通過或失敗" vertex="1">
+                    <mxGeometry height="40" width="180" x="20" y="290" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ci1" edge="1" parent="ci" source="ci1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="ci2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ci2" edge="1" parent="ci" source="ci2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="ci3">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ci3" edge="1" parent="ci" source="ci3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="ci4">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ci4" edge="1" parent="ci" source="ci4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="ci5">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="tr" parent="1" style="swimlane;startSize=30;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" value="訓練流程（人手動啟動）" vertex="1">
+                    <mxGeometry height="400" width="240" x="310" y="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="tr1" parent="tr" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="人：Build with Parameters" vertex="1">
+                    <mxGeometry height="40" width="200" x="20" y="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="tr2" parent="tr" style="rounded=1;whiteSpace=wrap;html=1;" value="GPU 執行機（label &#39;gpu&#39;）&lt;br&gt;啟動訓練 container" vertex="1">
+                    <mxGeometry height="40" width="200" x="20" y="105" as="geometry"/>
+                </mxCell>
+                <mxCell id="tr3" parent="tr" style="rounded=1;whiteSpace=wrap;html=1;" value="訓練 YOLO 並驗證" vertex="1">
+                    <mxGeometry height="40" width="200" x="20" y="165" as="geometry"/>
+                </mxCell>
+                <mxCell id="tr4" parent="tr" style="rounded=1;whiteSpace=wrap;html=1;" value="匯出 ONNX" vertex="1">
+                    <mxGeometry height="40" width="200" x="20" y="225" as="geometry"/>
+                </mxCell>
+                <mxCell id="tr5" parent="tr" style="rounded=1;whiteSpace=wrap;html=1;" value="上傳參數、指標、圖表" vertex="1">
+                    <mxGeometry height="40" width="200" x="20" y="285" as="geometry"/>
+                </mxCell>
+                <mxCell id="tr6" parent="tr" style="rounded=1;whiteSpace=wrap;html=1;fontStyle=1;" value="註冊成模型版本 vN" vertex="1">
+                    <mxGeometry height="40" width="200" x="20" y="345" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_tr1" edge="1" parent="tr" source="tr1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="tr2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_tr2" edge="1" parent="tr" source="tr2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="tr3">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_tr3" edge="1" parent="tr" source="tr3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="tr4">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_tr4" edge="1" parent="tr" source="tr4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="tr5">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_tr5" edge="1" parent="tr" source="tr5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="tr6">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="mlflow" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" value="MLflow&lt;br&gt;模型的唯一來源" vertex="1">
+                    <mxGeometry height="100" width="160" x="620" y="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="gate" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" value="部署關卡&lt;br&gt;人看指標決定" vertex="1">
+                    <mxGeometry height="110" width="180" x="610" y="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="stop" parent="1" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" value="結束，版本留在 MLflow" vertex="1">
+                    <mxGeometry height="40" width="160" x="620" y="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_up" edge="1" parent="1" source="tr5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="mlflow" value="上傳">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_reg" edge="1" parent="1" source="tr6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="mlflow" value="註冊">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_gate" edge="1" parent="1" source="mlflow" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="gate" value="比較新版本與 champion">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_no" edge="1" parent="1" source="gate" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="stop" value="不部署">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_yes" edge="1" parent="1" source="gate" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="dp1" value="要部署">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp" parent="1" style="swimlane;startSize=30;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;" value="部署流程（人指定模型版本啟動；回滾 = 指定舊版本再跑一次）" vertex="1">
+                    <mxGeometry height="610" width="460" x="860" y="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp1" parent="dp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="人：填 MODEL_VERSION 啟動" vertex="1">
+                    <mxGeometry height="40" width="210" x="20" y="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp2" parent="dp" style="rounded=1;whiteSpace=wrap;html=1;" value="從 MLflow 下載該版本的 ONNX" vertex="1">
+                    <mxGeometry height="40" width="210" x="20" y="105" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp3" parent="dp" style="rounded=1;whiteSpace=wrap;html=1;" value="建置偵測服務 image（內含模型）" vertex="1">
+                    <mxGeometry height="40" width="210" x="20" y="165" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp4" parent="dp" style="rounded=1;whiteSpace=wrap;html=1;" value="冒煙測試：送一張圖確認有回應" vertex="1">
+                    <mxGeometry height="40" width="210" x="20" y="225" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp5" parent="dp" style="rounded=1;whiteSpace=wrap;html=1;" value="推送 image" vertex="1">
+                    <mxGeometry height="40" width="210" x="20" y="285" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp6" parent="dp" style="rounded=1;whiteSpace=wrap;html=1;" value="kubectl set image&lt;br&gt;等待 rollout" vertex="1">
+                    <mxGeometry height="40" width="210" x="20" y="345" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp7" parent="dp" style="rhombus;whiteSpace=wrap;html=1;" value="rollout 成功？" vertex="1">
+                    <mxGeometry height="80" width="160" x="45" y="410" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp8" parent="dp" style="rounded=1;whiteSpace=wrap;html=1;fontStyle=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="champion 標記移到 vN" vertex="1">
+                    <mxGeometry height="40" width="210" x="20" y="545" as="geometry"/>
+                </mxCell>
+                <mxCell id="dp9" parent="dp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="rollout undo&lt;br&gt;champion 不動" vertex="1">
+                    <mxGeometry height="40" width="160" x="280" y="430" as="geometry"/>
+                </mxCell>
+                <mxCell id="dpfail" parent="dp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="失敗就停止&lt;br&gt;image 不推送" vertex="1">
+                    <mxGeometry height="40" width="160" x="280" y="225" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dp1" edge="1" parent="dp" source="dp1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="dp2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dp2" edge="1" parent="dp" source="dp2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="dp3">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dp3" edge="1" parent="dp" source="dp3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="dp4">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dp4" edge="1" parent="dp" source="dp4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="dp5" value="通過">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dp4f" edge="1" parent="dp" source="dp4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="dpfail" value="沒過">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dp5" edge="1" parent="dp" source="dp5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="dp6">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dp6" edge="1" parent="dp" source="dp6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="dp7">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dp7y" edge="1" parent="dp" source="dp7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="dp8" value="是">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dp7n" edge="1" parent="dp" source="dp7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="dp9" value="否">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="k8s" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" value="正式環境（K8s）&lt;br&gt;偵測服務 ×2 Pod&lt;br&gt;/healthz　/detect" vertex="1">
+                    <mxGeometry height="70" width="180" x="1380" y="370" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_k8s" edge="1" parent="1" source="dp6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="k8s" value="滾動更新">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dl" edge="1" parent="1" source="mlflow" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;exitX=1;exitY=0.3;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="dp2" value="下載 vN">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="830" y="330"/>
+                            <mxPoint x="830" y="165"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_champ" edge="1" parent="1" source="dp8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" target="mlflow" value="更新 champion">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

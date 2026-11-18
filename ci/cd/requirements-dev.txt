@@ -1,0 +1,9 @@
+# CI only: lightweight test dependencies. No PyTorch, Ultralytics or MLflow.
+# (Keep this file ASCII-only: pip on Windows fails to decode non-ASCII comments.)
+fastapi
+httpx
+python-multipart
+pillow
+numpy
+pytest
+ruff

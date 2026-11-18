@@ -1,0 +1,3 @@
+mlflow>=3,<4
+onnx
+onnxruntime

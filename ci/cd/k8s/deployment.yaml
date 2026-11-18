@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: detection-service
+  namespace: production
+  labels:
+    app: detection-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: detection-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0   # 新的 Pod 通過健康檢查之前，舊的不會被關掉
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: detection-service
+    spec:
+      containers:
+        - name: detection-service   # 部署流程的 kubectl set image 用的就是這個名字
+          # 這裡的 image 只在第一次建立時使用；之後每次部署都由 Jenkinsfile.deploy 換掉。
+          image: registry.example.com/ml/detection-service:bootstrap
+          ports:
+            - containerPort: 8000
+          readinessProbe:   # 模型載入完成才開始接流量
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:    # 服務卡死時由 K8s 重啟
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:        # CPU 推論，不要求節點有顯示卡
+            requests:
+              cpu: "500m"
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+      imagePullSecrets:
+        - name: registry-credentials
